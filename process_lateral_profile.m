@@ -50,5 +50,42 @@ ind = length(all_wpts.lat);
 all_wpts_out.crs_to_nxt{ind} = NaN;
 all_wpts_out.dist_to_nxt{ind} = NaN;
 
+
+%   Iterate over all generated waypoints
+for i = 1:length(all_wpts.name)
+    wp = all_wpts.name{i};
+    leg = all_wpts.leg_type{i};
+    disp(wp);
+    disp(leg);
+
+    %   Case 1: TF-leg
+    if all_wpts.leg_type{i} == "TF"
+        disp("...calculating TF-leg values...\n");
+
+    end
+
+    %   Case 2: RW-leg
+    if all_wpts.leg_type{i} == "RW"
+        disp("...calculating RW-leg values...\n");
+
+    end
+
+    %   Case 3: DF-leg
+    if all_wpts.leg_type{i} == "DF"
+        disp("...calculating DF-leg values...\n");
+
+    end
+
+    %   Case 4: CF-leg
+    if all_wpts.leg_type{i} == "TF"
+        disp("...calculating CF-leg values...\n");
+
+    end
+
+    disp("___"); %linebreak
+end
+
+
+
 lat = [];
 lon = [];
