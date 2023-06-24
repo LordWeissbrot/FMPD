@@ -44,48 +44,58 @@ for ind = 1:length(all_wpts.lat)-1
     
     [all_wpts_out.dist_to_nxt{ind}, all_wpts_out.crs_to_nxt{ind}, crs21] = inverse(pt1.lat,pt1.lon,pt2.lat,pt2.lon);
     
-end
+    end
 
 ind = length(all_wpts.lat);
 all_wpts_out.crs_to_nxt{ind} = NaN;
 all_wpts_out.dist_to_nxt{ind} = NaN;
+lat = [];
+lon = [];
+
+disp(all_wpts.name);
+disp(all_wpts.leg_type);
 
 
 %   Iterate over all generated waypoints
-for i = 1:length(all_wpts.name)
-    wp = all_wpts.name{i};
-    leg = all_wpts.leg_type{i};
-    disp(wp);
-    disp(leg);
+for i = 1:length(all_wpts.name)-1
+    %wp = all_wpts.name{i};
+    %leg = all_wpts.leg_type{i};
+    %disp(wp);
+    %disp(leg);
+    
 
-    %   Case 1: TF-leg
-    if all_wpts.leg_type{i} == "TF"
-        disp("...calculating TF-leg values...\n");
+    %   Case 1: TF-leg or RW-leg (artificial leg added to the departure runway)
+    if all_wpts.leg_type{i} == "TF" || all_wpts.leg_type{i} == "RW"
+        fprintf("...calculating ");
+        fprintf(all_wpts.leg_type{i});
+        fprintf("-leg from:");
+        fprintf(all_wpts.name{i});
+        fprintf("\n");
+
+        pt1.lat = lat_wpts(i)*pi/180;
+        pt1.lon = lon_wpts(i)*pi/180;
+        
+        pt2.lat = lat_wpts(i+1)*pi/180;
+        pt2.lon = lon_wpts(i+1)*pi/180;
+        [lat_i, lon_i, dist12]=create_straight(pt1, pt2, 100);
+        lat = [lat, lat_i*180/pi];
+        lon = [lon, lon_i*180/pi];
 
     end
 
-    %   Case 2: RW-leg
-    if all_wpts.leg_type{i} == "RW"
-        disp("...calculating RW-leg values...\n");
-
-    end
-
-    %   Case 3: DF-leg
+    %   Case 2: DF-leg
     if all_wpts.leg_type{i} == "DF"
-        disp("...calculating DF-leg values...\n");
+        %disp("...calculating DF-leg values...\n");
 
     end
 
-    %   Case 4: CF-leg
-    if all_wpts.leg_type{i} == "TF"
-        disp("...calculating CF-leg values...\n");
+    %   Case 3: CF-leg
+    if all_wpts.leg_type{i} == "CF"
+        %disp("...calculating CF-leg values...\n");
 
     end
-
-    disp("___"); %linebreak
-end
-
+end % end of loop; 
+end % end of function:
 
 
-lat = [];
-lon = [];
+
