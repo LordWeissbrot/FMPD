@@ -91,7 +91,11 @@ for i = 1:length(all_wpts.name)-1
 
     %   Case 3: CF-leg
     if all_wpts.leg_type{i} == "CF"
-        %disp("...calculating CF-leg values...\n");
+        fprintf("...calculating ");
+        fprintf(all_wpts.leg_type{i});
+        fprintf("-leg from:");
+        fprintf(all_wpts.name{i});
+        fprintf("\n");
 
     end
 end % end of loop; 
