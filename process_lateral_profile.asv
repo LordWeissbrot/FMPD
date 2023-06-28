@@ -76,8 +76,8 @@ for i = 1:length(all_wpts.name)-1
     
 
     %   Case 1: TF-leg or RW-leg (artificial leg added to the departure runway)
-    if i = length(all_wpts.name)-1
-        fprintf("FINAL LEG...calculating ");
+    if i == length(all_wpts.name)-1
+        fprintf("FINAL:...calculating ");
         fprintf(all_wpts.leg_type{i});
         fprintf("-leg from:");
         fprintf(all_wpts.name{i});
@@ -99,11 +99,11 @@ for i = 1:length(all_wpts.name)-1
         [lat_i, lon_i, dist12]=create_straight(pt1, pt2, 100);
         lat = [lat, lat_i*180/pi];
         lon = [lon, lon_i*180/pi];
+    
     else
-
             %   Case 1: Not RF-leg
         if all_wpts.leg_type{i} ~= "RF"
-            fprintf("...calculating ");
+            fprintf("Non-RF:...calculating ");
             fprintf(all_wpts.leg_type{i});
             fprintf("-leg from:");
             fprintf(all_wpts.name{i});
@@ -142,18 +142,18 @@ for i = 1:length(all_wpts.name)-1
     
             %check if course change is big enough for
             %wgs84_tangent_fixed_radius_arc()
-            cours_change = crs32-crs12
+            cours_change = crs23-crs12;
             if cours_change > 1e-3
     
                 [centerPt, startPt, endPt, dir] = wgs84_tangent_fixed_radius_arc(pt1, crs12, pt3, crs32-pi, radius);
         
                 %calc dots between pt1 and startPt
-                [lat_i, lon_i, dist12]=create_straight(pt1, startPt, 80);
+                [lat_i, lon_i, dist12]=create_straight(pt1, startPt, 50);
                 lat = [lat, lat_i*180/pi];
                 lon = [lon, lon_i*180/pi];
             
                 %calc dots in arc between startPt and endPt
-                [lat_i, lon_i, dist12]=create_arc(startPt, endPt, centerPt, 60);
+                [lat_i, lon_i, dist12]=create_arc(startPt, endPt, centerPt, 50);
                 lat = [lat, lat_i*180/pi];
                 lon = [lon, lon_i*180/pi];
         
@@ -164,18 +164,7 @@ for i = 1:length(all_wpts.name)-1
                 lat = [lat, lat_i*180/pi];
                 lon = [lon, lon_i*180/pi];
             end
-
-
-    end
-
-    %   Case 2: DF-leg
-    %if all_wpts.leg_type{i+1} == "DF"
-    %    %disp("...calculating DF-leg values...\n");
-
-    %end
-
-    
-
+        end
     end
 end % end of loop; 
 end % end of function:

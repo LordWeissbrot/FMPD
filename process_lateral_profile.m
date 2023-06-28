@@ -142,8 +142,8 @@ for i = 1:length(all_wpts.name)-1
     
             %check if course change is big enough for
             %wgs84_tangent_fixed_radius_arc()
-            cours_change = crs32-crs12;
-            if cours_change > 1e-3
+            cours_change = abs(crs23-crs12);
+            if cours_change > 1e-2
     
                 [centerPt, startPt, endPt, dir] = wgs84_tangent_fixed_radius_arc(pt1, crs12, pt3, crs32-pi, radius);
         
