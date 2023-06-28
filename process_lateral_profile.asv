@@ -75,7 +75,7 @@ for i = 1:length(all_wpts.name)-1
     %disp(leg);
     
 
-    %   Case 1: TF-leg or RW-leg (artificial leg added to the departure runway)
+%% last waypoint
     if i == length(all_wpts.name)-1
         fprintf("FINAL:...calculating ");
         fprintf(all_wpts.leg_type{i});
@@ -99,30 +99,30 @@ for i = 1:length(all_wpts.name)-1
         [lat_i, lon_i, dist12]=create_straight(pt1, pt2, 100);
         lat = [lat, lat_i*180/pi];
         lon = [lon, lon_i*180/pi];
-    
+
     else
-            %   Case 1: Not RF-leg
-        if all_wpts.leg_type{i} ~= "RF"
+        % Check if lat and lon vectors are not empty
+        if isempty(lat) && isempty(lon)
+            % use position of current wp
+            pt1.lat = lat_wpts(i) * pi/180;
+            pt1.lon = lon_wpts(i) * pi/180;
+        else
+            % Use last calculated position of aircraft
+            pt1.lat = lat(end) * pi/180;
+            pt1.lon = lon(end) * pi/180;
+        end
+
+        %assumption: all wp are fly-over, beside end of RF-leg
+        pt2.lat = lat_wpts(i+1)*pi/180; 
+        pt2.lon = lon_wpts(i+1)*pi/180;
+
+ %% Non-RF-leg cases
+        if all_wpts.leg_type{i+1} ~= "RF"
             fprintf("Non-RF:...calculating ");
             fprintf(all_wpts.leg_type{i});
             fprintf("-leg from:");
             fprintf(all_wpts.name{i});
             fprintf("\n");
-    
-            % Check if lat and lon vectors are not empty
-            if isempty(lat) && isempty(lon)
-                % use position of current wp
-                pt1.lat = lat_wpts(i) * pi/180;
-                pt1.lon = lon_wpts(i) * pi/180;
-            else
-                % Use last calculated position of aircraft
-                pt1.lat = lat(end) * pi/180;
-                pt1.lon = lon(end) * pi/180;
-            end
-    
-            %assumption: all wp are fly-over, beside end of RF-leg
-            pt2.lat = lat_wpts(i+1)*pi/180; 
-            pt2.lon = lon_wpts(i+1)*pi/180;
             
             pt3.lat = lat_wpts(i+2)*pi/180;
             pt3.lon = lon_wpts(i+2)*pi/180;
@@ -142,8 +142,8 @@ for i = 1:length(all_wpts.name)-1
     
             %check if course change is big enough for
             %wgs84_tangent_fixed_radius_arc()
-            cours_change = crs23-crs12;
-            if cours_change > 1e-3
+            cours_change = abs(crs23-crs12);
+            if cours_change > 1e-2 && all_wpts.leg_type{i+2} ~= "RF"
     
                 [centerPt, startPt, endPt, dir] = wgs84_tangent_fixed_radius_arc(pt1, crs12, pt3, crs32-pi, radius);
         
@@ -158,12 +158,55 @@ for i = 1:length(all_wpts.name)-1
                 lon = [lon, lon_i*180/pi];
         
             
-            else %course change too small
+            else %course change too small or next leg == RF-leg
                 %calc dots between p1 and pt2
                 [lat_i, lon_i, dist12]=create_straight(pt1, pt2, 100);
                 lat = [lat, lat_i*180/pi];
                 lon = [lon, lon_i*180/pi];
             end
+%% RF-leg case
+        else
+            fprintf("RF:...calculating ");
+            fprintf(all_wpts.leg_type{i});
+            fprintf("-leg from:");
+            fprintf(all_wpts.name{i});
+            fprintf("\n");
+
+                
+            pt1.lat = lat_wpts(i) * pi/180;
+            pt1.lon = lon_wpts(i) * pi/180;
+    
+            pt2.lat = lat_wpts(i+1)*pi/180; 
+            pt2.lon = lon_wpts(i+1)*pi/180;
+
+            pt3.lat = all_wpts.center_lat{i}*pi/180; %center
+            pt3.lon = all_wpts.center_lon{i}*pi/180;
+
+            [dist13, crs13, crs31] = inverse(pt1.lat,pt1.lon,pt3.lat,pt3.lon);
+            [dist23, crs23, crs32] = inverse(pt2.lat,pt2.lon,pt3.lat,pt3.lon);
+            
+            radius = dist13;
+            
+            %fprintf('%f, %f\n', dist13/1852.0, dist23/1852.0);
+            
+            N = 200;
+            d_angle = -(crs32 - crs31)/N;
+            
+            d_angle = signed_azimuth_difference(crs32, crs31)/N;
+            
+            signed_azimuth_difference(crs32, crs31)*180/pi-360
+            
+            lat_i = [];
+            lon_i = [];
+            for ii=1:(N-1)
+            
+                [lat_i(ii), lon_i(ii), crs21] = direct(pt3.lat,pt3.lon, radius, crs31+ii*d_angle);
+            
+            end
+
+            %[lat_i, lon_i, dist12]=create_arc(pt1,pt2,rf_center,100);
+            lat = [lat, lat_i*180/pi];
+            lon = [lon, lon_i*180/pi];
         end
     end
 end % end of loop; 

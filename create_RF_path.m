@@ -10,7 +10,7 @@ radius = dist13;
 
 d_angle = signed_azimuth_difference(crs32, crs31)/N;
 
-signed_azimuth_difference(crs32, crs31)*180/pi-360
+signed_azimuth_difference(crs32, crs31)*180/pi-360;
 
 lat = [];
 lon = [];
