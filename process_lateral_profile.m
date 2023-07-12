@@ -42,7 +42,7 @@ all_wpts_out = all_wpts;
 
 lat_wpts = cell2mat(all_wpts.lat);
 lon_wpts = cell2mat(all_wpts.lon);
-
+ 
 %   Compute the distances between the waypoints, 
 %   except for ARC --> then NaN
 for ind = 1:length(all_wpts.lat)-1
@@ -63,8 +63,8 @@ all_wpts_out.dist_to_nxt{ind} = NaN;
 lat = [];
 lon = [];
 
-disp(all_wpts.name);
-disp(all_wpts.leg_type);
+%disp(all_wpts.name);
+%disp(all_wpts.leg_type);
 
 
 %   Iterate over all generated waypoints
@@ -96,6 +96,7 @@ for i = 1:length(all_wpts.name)-1
         
         pt2.lat = lat_wpts(i+1)*pi/180;
         pt2.lon = lon_wpts(i+1)*pi/180;
+
         [lat_i, lon_i, dist12]=create_straight(pt1, pt2, 100);
         lat = [lat, lat_i*180/pi];
         lon = [lon, lon_i*180/pi];
@@ -123,7 +124,7 @@ for i = 1:length(all_wpts.name)-1
             fprintf("-leg to:");
             fprintf(all_wpts.name{i});
             fprintf("\n");
-            
+
             pt3.lat = lat_wpts(i+2)*pi/180;
             pt3.lon = lon_wpts(i+2)*pi/180;
     
@@ -131,19 +132,19 @@ for i = 1:length(all_wpts.name)-1
             [dist12, crs12, crs21] = inverse(pt1.lat,pt1.lon,pt2.lat,pt2.lon);
             [dist23, crs23, crs32] = inverse(pt2.lat,pt2.lon,pt3.lat,pt3.lon);
             [dist13, crs13, crs31] = inverse(pt1.lat,pt1.lon,pt3.lat,pt3.lon);
-    
-            % Calculate arc
-            % Compute air density, air pressure, temperature and speed of sound
-            [rho, p, temp, soundSpeed] = Atmos(5000*FT2M);
-            % Compute the true airspeed based on height and CAS schedule
-            V = CAStoTAS(220,rho,p)*KTS2MPS;
-            % Nominal bank angle of 22 degrees
-            radius = V^2/(G_CONST*tan(22*DEG2RAD));
-    
+
             %check if course change is big enough for
             %wgs84_tangent_fixed_radius_arc()
             cours_change = abs(crs23-crs12);
             if cours_change > 1e-2 && all_wpts.leg_type{i+2} ~= "RF"
+        
+                % Calculate arc
+                % Compute air density, air pressure, temperature and speed of sound
+                [rho, p, temp, soundSpeed] = Atmos(5000*FT2M);
+                % Compute the true airspeed based on height and CAS schedule
+                V = CAStoTAS(220,rho,p)*KTS2MPS;
+                % Nominal bank angle of 22 degrees
+                radius = V^2/(G_CONST*tan(22*DEG2RAD));
     
                 [centerPt, startPt, endPt, dir] = wgs84_tangent_fixed_radius_arc(pt1, crs12, pt3, crs32-pi, radius);
         
