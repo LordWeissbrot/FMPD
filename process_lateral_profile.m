@@ -58,134 +58,97 @@ for ind = 1:length(all_wpts.lat)-1
 ind = length(all_wpts.lat);
 all_wpts_out.crs_to_nxt{ind} = NaN;
 all_wpts_out.dist_to_nxt{ind} = NaN;
+
+%% ================================== Solution Part 1 ==================================
 % Initialize latitude and longitude arrays
 lat = [];
 lon = [];
 
-%disp(all_wpts.name);
-%disp(all_wpts.leg_type);
-
-
-%   Iterate over all generated waypoints
+% Iterate over all waypoints
 for i = 1:length(all_wpts.name)-1
-    %wp = all_wpts.name{i};
-    %leg = all_wpts.leg_type{i};
-    %disp(wp);
-    %disp(leg);
+    % Check if lat and lon arrays are empty
+    if isempty(lat) && isempty(lon)
+        % Initialize the first point with lat and lon coordinates
+        pt1.lat = lat_wpts(i) * pi/180;
+        pt1.lon = lon_wpts(i) * pi/180;
+    else
+        % If not, use the last lat and lon coordinate
+        pt1.lat = lat(end) * pi/180;
+        pt1.lon = lon(end) * pi/180;
+    end
     
-
-%% last waypoint
+    % Define the next waypoint
+    pt2.lat = lat_wpts(i+1)*pi/180;
+    pt2.lon = lon_wpts(i+1)*pi/180;
+    
+    % Handle last two waypoints
     if i == length(all_wpts.name)-1
-        fprintf("FINAL:...calculating ");
-        fprintf(all_wpts.leg_type{i});
-        fprintf("-leg from:");
-        fprintf(all_wpts.name{i});
-        fprintf("\n");
+        fprintf("FINAL:...calculating %s-leg from: %s\n", all_wpts.leg_type{i}, all_wpts.name{i});
 
-        % Check if lat and lon vectors are not empty
-        if isempty(lat) && isempty(lon)
-            % Save the last element of lat and lon in pt1.lat and pt1.lon
-            pt1.lat = lat_wpts(i) * pi/180;
-            pt1.lon = lon_wpts(i) * pi/180;
-        else
-            % Use lat_wpts(i) and lon_wpts(i) if the vectors are empty
-            pt1.lat = lat(end) * pi/180;
-            pt1.lon = lon(end) * pi/180;
-        end
-        
-        pt2.lat = lat_wpts(i+1)*pi/180;
-        pt2.lon = lon_wpts(i+1)*pi/180;
-
-        [lat_i, lon_i, dist12]=create_straight(pt1, pt2, 100);
+        [lat_i, lon_i, dist12] = create_straight(pt1, pt2, 100);
         lat = [lat, lat_i*180/pi];
         lon = [lon, lon_i*180/pi];
 
+    % Handle all other waypoints
     else
-        % Check if lat and lon vectors are not empty
-        if isempty(lat) && isempty(lon)
-            % use position of current wp
-            pt1.lat = lat_wpts(i) * pi/180;
-            pt1.lon = lon_wpts(i) * pi/180;
-        else
-            % Use last calculated position of aircraft
-            pt1.lat = lat(end) * pi/180;
-            pt1.lon = lon(end) * pi/180;
-        end
-
-        %assumption: all wp are fly-over, beside end of RF-leg
-        pt2.lat = lat_wpts(i+1)*pi/180; 
-        pt2.lon = lon_wpts(i+1)*pi/180;
-
- %% Non-RF-leg cases
+        %% Calculate NON-RF leg
         if all_wpts.leg_type{i+1} ~= "RF"
-            fprintf("Non-RF:...calculating ");
-            fprintf(all_wpts.leg_type{i+1});
-            fprintf("-leg to:");
-            fprintf(all_wpts.name{i});
-            fprintf("\n");
-
+            fprintf("Non-RF:...calculating %s-leg to: %s\n", all_wpts.leg_type{i+1}, all_wpts.name{i});
+            
+            % Define coordinates 2 waypoints ahead
             pt3.lat = lat_wpts(i+2)*pi/180;
             pt3.lon = lon_wpts(i+2)*pi/180;
     
-            %calc arc between wp-1, wp and wp+1
+            % Calculate distances and courses between points
             [dist12, crs12, crs21] = inverse(pt1.lat,pt1.lon,pt2.lat,pt2.lon);
             [dist23, crs23, crs32] = inverse(pt2.lat,pt2.lon,pt3.lat,pt3.lon);
-            [dist13, crs13, crs31] = inverse(pt1.lat,pt1.lon,pt3.lat,pt3.lon);
 
-            %check if course change is big enough for
-            %wgs84_tangent_fixed_radius_arc()
+            % Calculate course change
             cours_change = abs(crs23-crs12);
-            if cours_change > 1e-2 && all_wpts.leg_type{i+2} ~= "RF"
         
-                % Calculate arc
+            % Course change big enough and upcoming leg is NON-RF
+            if cours_change > 1e-2 && all_wpts.leg_type{i+2} ~= "RF"
+
                 % Compute air density, air pressure, temperature and speed of sound
                 [rho, p, temp, soundSpeed] = Atmos(5000*FT2M);
                 % Compute the true airspeed based on height and CAS schedule
                 V = CAStoTAS(220,rho,p)*KTS2MPS;
                 % Nominal bank angle of 22 degrees
                 radius = V^2/(G_CONST*tan(22*DEG2RAD));
-    
+
+                % Calculate fixed radius arc
                 [centerPt, startPt, endPt, dir] = wgs84_tangent_fixed_radius_arc(pt1, crs12, pt3, crs32-pi, radius);
-        
-                %calc dots between pt1 and startPt
-                [lat_i, lon_i, dist12]=create_straight(pt1, startPt, 50);
+                
+                % Create straight line from pt1 to startPt of arc
+                [lat_i, lon_i, dist12] = create_straight(pt1, startPt, 50);
                 lat = [lat, lat_i*180/pi];
                 lon = [lon, lon_i*180/pi];
-            
-                %calc dots in arc between startPt and endPt
-                [lat_i, lon_i, dist12]=create_arc(startPt, endPt, centerPt, 50);
+                
+                % Create arc from startPt to endPt
+                [lat_i, lon_i, dist12] = create_arc(startPt, endPt, centerPt, 50);
                 lat = [lat, lat_i*180/pi];
                 lon = [lon, lon_i*180/pi];
-        
-            
-            else %course change too small or next leg == RF-leg
-                %calc dots between p1 and pt2
-                [lat_i, lon_i, dist12]=create_straight(pt1, pt2, 100);
+
+            % Course change to small
+            else
+                % Create straight line from pt1 to pt2
+                [lat_i, lon_i, dist12] = create_straight(pt1, pt2, 100);
                 lat = [lat, lat_i*180/pi];
                 lon = [lon, lon_i*180/pi];
             end
-%% RF-leg case
+
+        %% Calculate RF leg    
         else
-            fprintf("RF:...calculating ");
-            fprintf(all_wpts.leg_type{i+1});
-            fprintf("-leg to:");
-            fprintf(all_wpts.name{i});
-            fprintf("\n");
-
-                
-            pt1.lat = lat_wpts(i) * pi/180;
-            pt1.lon = lon_wpts(i) * pi/180;
-    
-            pt2.lat = lat_wpts(i+1)*pi/180; 
-            pt2.lon = lon_wpts(i+1)*pi/180;
-
-            pt3.lat = all_wpts.center_lat{i+1}*pi/180; %center
+            fprintf("RF:...calculating %s-leg to: %s\n", all_wpts.leg_type{i+1}, all_wpts.name{i});
+            
+            % Define arc center as arbitrary pt3
+            pt3.lat = all_wpts.center_lat{i+1}*pi/180;
             pt3.lon = all_wpts.center_lon{i+1}*pi/180;
-
-            [lat_i, lon_i, dist12]=create_arc(pt1,pt2,pt3,100);
+    
+            % Create arc around pt3
+            [lat_i, lon_i, dist12] = create_arc(pt1,pt2,pt3,100);
             lat = [lat, lat_i*180/pi];
             lon = [lon, lon_i*180/pi];
         end
-    end
-end % end of loop; 
+    end % end of loop; 
 end % end of function:
